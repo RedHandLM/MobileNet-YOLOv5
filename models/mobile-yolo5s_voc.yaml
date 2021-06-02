@@ -1,0 +1,86 @@
+# 尝试参考  https://blog.csdn.net/wa1tzy/article/details/114492726
+# parameters
+nc: 20  # number of classes
+depth_multiple: 0.33  # model depth multiple
+width_multiple: 0.50  # layer channel multiple
+
+# anchors
+anchors:
+  - [10,13, 16,30, 33,23]  # P3/8
+  - [30,61, 62,45, 59,119]  # P4/16
+  - [116,90, 156,198, 373,326]  # P5/32
+
+# yolov5 backbone
+# InvertedResidual 中默认设置为0.25宽度
+backbone:
+  # [from, number, module, args]
+  # from   第一列 输入来自哪一层  -1代表上一层， 4代表第4层
+  # number 第二列 卷积核的数量    最终数量需要乘上width
+  # module 第三列 模块名称 包括：Conv Focus BottleneckCSP  SPP
+  # args   第四列 模块的参数
+
+#  [[-1, 1, Conv, [64, 3, 2]],              # 0-P1/2   320x320*32
+#   [-1, 1, InvertedResidual, [32, 1, 1]],  # 1        320x320*16
+#   [-1, 1, InvertedResidual, [48, 2, 6]],  # 2-P2/4   160x160*24
+#   [-1, 1, InvertedResidual, [48, 1, 6]],  # 3-P2/4   160x160*24
+#   [-1, 1, InvertedResidual, [64, 2, 6]],  # 4-P3/8   80x80*32
+#   [-1, 1, InvertedResidual, [64, 1, 6]],  # 5-P3/8   80x80*32
+#   [-1, 1, InvertedResidual, [64, 1, 6]],  # 6-P3/8   80x80*32
+#   [-1, 1, InvertedResidual, [128, 2, 6]],  # 7-P4/16  40x40*64
+#   [-1, 1, InvertedResidual, [128, 1, 6]],  # 8-P4/16  40x40*64
+#   [-1, 1, InvertedResidual, [128, 1, 6]],  # 9-P4/16  40x40*64
+#   [-1, 1, InvertedResidual, [128, 1, 6]],  # 10-P4/16 40x40*64
+#   [-1, 1, InvertedResidual, [192, 1, 6]],  # 11       40X40*96
+#   [-1, 1, InvertedResidual, [192, 1, 6]],  # 12       40X40*96
+#   [-1, 1, InvertedResidual, [192, 1, 6]],  # 13       40X40*96
+#   [-1, 1, InvertedResidual, [320, 2, 6]], # 14-P5/32  20X20*160
+#   [-1, 1, InvertedResidual, [320, 1, 6]], # 15-P5/32  20X20*160
+#   [-1, 1, InvertedResidual, [320, 1, 6]], # 16-P5/32  20X20*160
+#   [-1, 1, InvertedResidual, [640, 1, 6]],  # 17       20X20*320
+#  ]
+  ####################################backbone=0.25##########################################
+  [[-1, 1, Conv, [8, 3, 2]],              # 0-P1/2   320x320*32
+   [-1, 1, InvertedResidual, [8, 1, 1]],  # 1        320x320*16
+   [-1, 1, InvertedResidual, [8, 2, 6]],  # 2-P2/4   160x160*24
+   [-1, 1, InvertedResidual, [8, 1, 6]],  # 3-P2/4   160x160*24
+   [-1, 1, InvertedResidual, [8, 2, 6]],  # 4-P3/8   80x80*32
+   [-1, 1, InvertedResidual, [8, 1, 6]],  # 5-P3/8   80x80*32
+   [-1, 1, InvertedResidual, [8, 1, 6]],  # 6-P3/8   80x80*32
+   [-1, 1, InvertedResidual, [32, 2, 6]],  # 7-P4/16  40x40*64
+   [-1, 1, InvertedResidual, [32, 1, 6]],  # 8-P4/16  40x40*64
+   [-1, 1, InvertedResidual, [32, 1, 6]],  # 9-P4/16  40x40*64
+   [-1, 1, InvertedResidual, [32, 1, 6]],  # 10-P4/16 40x40*64
+   [-1, 1, InvertedResidual, [48, 1, 6]],  # 11       40X40*96
+   [-1, 1, InvertedResidual, [48, 1, 6]],  # 12       40X40*96
+   [-1, 1, InvertedResidual, [48, 1, 6]],  # 13       40X40*96
+   [-1, 1, InvertedResidual, [80, 2, 6]], # 14-P5/32  20X20*160
+   [-1, 1, InvertedResidual, [80, 1, 6]], # 15-P5/32  20X20*160
+   [-1, 1, InvertedResidual, [80, 1, 6]], # 16-P5/32  20X20*160
+   [-1, 1, InvertedResidual, [160, 1, 6]],  # 17       20X20*320
+  ]
+
+
+# YOLOv5 head
+head:
+  [[-1, 1, Conv, [512, 1, 1]],                        #    20*20*320  -->  20*20*512
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],        #    20*20*512  -->  40*40*512
+   [[-1, 10], 1, Concat, [1]],  # cat backbone P4      #   40*40*512  +    40*40*64  -->  40*40*576
+   [-1, 3, C3, [512, False]],  # 13   head-P4         #    40*40*576  -->  40*40*512
+
+   [-1, 1, Conv, [256, 1, 1]],                        #    40*40*512  -->  40*40*256
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],        #    40*40*256  -->  80*80*256
+   [[-1, 6], 1, Concat, [1]],  # cat backbone P3      #    80*80*256  +    80*80*32  -->  80*80*288
+   [-1, 3, C3, [256, False]],  # 17 (P3/8-small)      #    80*80*288  -->  80*80*256   25
+
+   [-1, 1, Conv, [256, 3, 2]],                        #    80*80*256  -->  40*40*256
+   [[-1, 13], 1, Concat, [1]],  # cat head P4         #    40*40*256  +    40*40*512   -->  40*40*768
+   [-1, 3, C3, [512, False]],  # 20 (P4/16-medium)    #    40*40*768  -->  40*40*512   28
+
+   [-1, 1, Conv, [512, 3, 2]],                        #    40*40*512  -->  20*20*512
+   [[-1, 18], 1, Concat, [1]],  # cat head P5         #    20*20*512  +    20X20*320   -->  20*20*832
+   [-1, 3, C3, [1024, False]],  # 23 (P5/32-large)    #    20*20*832  -->  20*20*1024   31
+
+   #[[17, 20, 23], 1, Detect, [nc, anchors]],  # Detect(P3, P4, P5)
+   [[25, 28, 31], 1, Detect, [nc, anchors]],  # Detect(P3, P4, P5)
+  ]
+
