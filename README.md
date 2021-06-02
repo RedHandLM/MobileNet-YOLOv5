@@ -1,5 +1,5 @@
 # MobileNet-YOLOv5
-replace YOLOv5 tag=4.0 backbone : MobileNet1.0和MobileNet0.25
+replace YOLOv5 tag=4.0 backbone : MobileNet1.0 and MobileNet0.25
 
 
 ## DataSet
